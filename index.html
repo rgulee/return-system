@@ -4,7 +4,30 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 <title>電商退貨管理系統</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jsQR/1.4.0/jsQR.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jsQR/1.4.0/jsQR.min.js">
+// 自動開啟相機：電腦/部分 Android 可直接開；iPhone 若被瀏覽器擋住，點一下畫面會啟動
+function autoStartCamera(){
+  const hint = document.getElementById('autoStartHint');
+  setTimeout(() => {
+    startScan().catch(() => {
+      if(hint) hint.classList.add('show');
+    });
+  }, 500);
+
+  const unlock = () => {
+    if(hint) hint.classList.remove('show');
+    startScan();
+    document.removeEventListener('click', unlock);
+    document.removeEventListener('touchstart', unlock);
+  };
+
+  document.addEventListener('click', unlock, { once:true });
+  document.addEventListener('touchstart', unlock, { once:true });
+}
+
+window.addEventListener('load', autoStartCamera);
+
+</script>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet" />
 <style>
 :root{--bg:#0f1117;--surface:#1a1d27;--surface2:#22263a;--border:#2e3350;--accent:#4f8ef7;--accent2:#f7c94f;--green:#3ecf8e;--red:#f76f6f;--text:#e8eaf6;--muted:#7c82a3;}
@@ -24,6 +47,15 @@ body{background:var(--bg);color:var(--text);font-family:'Noto Sans TC',sans-seri
 .btn-row{display:flex;gap:10px;margin-top:14px}.btn{flex:1;padding:11px;border-radius:10px;font-size:13px;font-weight:900;border:none}.btn-primary{background:var(--accent);color:#fff}.btn-ghost{background:var(--surface2);color:var(--muted);border:1px solid var(--border)}
 .tbl-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}.tbl-title{font-size:13px;font-weight:900}.export-btn{background:var(--surface2);border:1px solid var(--border);color:var(--accent2);padding:7px 12px;border-radius:8px;font-size:11px;font-weight:900}.tbl-wrap{overflow-x:auto;border-radius:12px;border:1px solid var(--border)}table{width:100%;border-collapse:collapse;min-width:760px}thead th{background:var(--surface2);padding:9px 10px;font-size:10px;font-weight:900;color:var(--muted);text-align:left;white-space:nowrap}tbody tr{border-top:1px solid var(--border)}tbody td{padding:8px 10px;font-size:12px;vertical-align:middle}.c-order{font-family:'JetBrains Mono',monospace;color:var(--accent);max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.c-date{font-family:'JetBrains Mono',monospace;color:var(--muted);white-space:nowrap}.c-qty{font-family:'JetBrains Mono',monospace;font-weight:900;color:var(--accent2);text-align:center}.c-small{color:var(--muted);max-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.thumb-mini{width:28px;height:28px;border-radius:4px;object-fit:cover;border:1px solid var(--border);margin-right:3px;vertical-align:middle}.del-btn{background:none;border:0;color:var(--muted);font-size:15px;padding:3px 7px;cursor:pointer}.del-btn:hover{color:var(--red)}.empty-state{text-align:center;padding:32px 0;color:var(--muted);font-size:12px}.empty-icon{font-size:28px;margin-bottom:8px}.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(100px);background:var(--green);color:#0f1117;padding:10px 20px;border-radius:50px;font-size:13px;font-weight:900;transition:.28s;z-index:999;white-space:nowrap}.toast.show{transform:translateX(-50%) translateY(0)}.modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:998;align-items:center;justify-content:center;padding:18px}.modal.show{display:flex}.modal img{max-width:100%;max-height:82vh;border-radius:12px}.modal-close{position:absolute;top:18px;right:20px;background:rgba(255,255,255,.12);border:0;color:#fff;font-size:26px;width:42px;height:42px;border-radius:50%;cursor:pointer}
 @media(max-width:520px){body{padding:14px 10px 60px}.form-grid{grid-template-columns:1fr}.fg{grid-column:1/-1}.header h1{font-size:16px}.card{padding:14px}}
+
+.auto-start-hint{
+  position:fixed;left:50%;bottom:18px;transform:translateX(-50%);
+  background:rgba(79,142,247,.95);color:#fff;padding:10px 16px;
+  border-radius:999px;font-size:13px;font-weight:900;z-index:1000;
+  box-shadow:0 8px 24px rgba(0,0,0,.35);display:none;
+}
+.auto-start-hint.show{display:block}
+
 </style>
 </head>
 <body>
@@ -43,6 +75,7 @@ body{background:var(--bg);color:var(--text);font-family:'Noto Sans TC',sans-seri
 </div><div class="btn-row"><button class="btn btn-ghost" onclick="clearForm()">清除</button><button class="btn btn-primary" onclick="addRecord()">＋ 新增商品</button></div></div>
 
 <div><div class="tbl-header"><div class="tbl-title">退貨紀錄列表</div><button class="export-btn" onclick="exportCSV()">⬇ 匯出 CSV</button></div><div class="tbl-wrap"><table><thead><tr><th>#</th><th>日期</th><th>訂單編號</th><th>商品名稱</th><th>數量</th><th>單位</th><th>負責人</th><th>備註</th><th>照片</th><th></th></tr></thead><tbody id="tableBody"></tbody></table></div></div>
+<div class="auto-start-hint" id="autoStartHint">點一下畫面啟動相機</div>
 <div class="toast" id="toast"></div><div class="modal" id="photoModal" onclick="closePhotoModal()"><button class="modal-close" onclick="closePhotoModal()">×</button><img id="modalImg"></div>
 
 <script>
@@ -61,6 +94,29 @@ function deleteRecord(id){if(!confirm('確定刪除這筆退貨紀錄？'))retur
 function renderTable(){document.getElementById('totalCount').textContent=records.length;const tbody=document.getElementById('tableBody');if(!records.length){tbody.innerHTML=`<tr><td colspan="10"><div class="empty-state"><div class="empty-icon">📋</div>尚無退貨紀錄</div></td></tr>`;return}tbody.innerHTML=records.map((r,i)=>`<tr><td>${records.length-i}</td><td class="c-date">${esc(r.date||'—')}</td><td class="c-order" title="${esc(r.order)}">${esc(r.order)}</td><td class="c-small" title="${esc(r.product)}">${esc(r.product)}</td><td class="c-qty">${esc(r.qty)}</td><td>${esc(r.unit||'包')}</td><td>${esc(r.pic||'—')}</td><td class="c-small" title="${esc(r.remark)}">${esc(r.remark||'—')}</td><td>${(r.photos||[]).slice(0,3).map(p=>`<img class="thumb-mini" src="${p}" onclick="openPhoto('${p}')">`).join('')||'—'}</td><td><button class="del-btn" onclick="deleteRecord(${r.id})">✕</button></td></tr>`).join('')}
 function csvCell(v){return '="'+String(v??'').replace(/"/g,'""')+'"'}function exportCSV(){if(!records.length){showToast('⚠️ 沒有資料','#f7c94f','#0f1117');return}const header=['#','日期','訂單編號','商品名稱','數量','單位','負責人','備註','照片數'];const rows=records.map((r,i)=>[records.length-i,r.date,r.order,r.product,r.qty,r.unit,r.pic,r.remark,(r.photos||[]).length]);const csv='\uFEFF'+[header,...rows].map(row=>row.map(csvCell).join(',')).join('\n');const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`退貨紀錄_${todayStr()}.csv`;document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(a.href);showToast('⬇ CSV 已匯出')}
 function showToast(msg,bg='var(--green)',color='#0f1117'){const t=document.getElementById('toast');t.textContent=msg;t.style.background=bg;t.style.color=color;t.classList.add('show');clearTimeout(t._timer);t._timer=setTimeout(()=>t.classList.remove('show'),2200)}document.querySelectorAll('input[type="text"],input[type="number"]').forEach(el=>el.addEventListener('keydown',e=>{if(e.key==='Enter')addRecord()}));
+
+// 自動開啟相機：電腦/部分 Android 可直接開；iPhone 若被瀏覽器擋住，點一下畫面會啟動
+function autoStartCamera(){
+  const hint = document.getElementById('autoStartHint');
+  setTimeout(() => {
+    startScan().catch(() => {
+      if(hint) hint.classList.add('show');
+    });
+  }, 500);
+
+  const unlock = () => {
+    if(hint) hint.classList.remove('show');
+    startScan();
+    document.removeEventListener('click', unlock);
+    document.removeEventListener('touchstart', unlock);
+  };
+
+  document.addEventListener('click', unlock, { once:true });
+  document.addEventListener('touchstart', unlock, { once:true });
+}
+
+window.addEventListener('load', autoStartCamera);
+
 </script>
 </body>
 </html>
