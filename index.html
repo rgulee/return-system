@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+
 <html lang="zh-TW">
 <head>
 <meta charset="UTF-8"/>
@@ -21,19 +22,17 @@ body{background:var(--bg);color:var(--text);font-family:'Noto Sans TC',sans-seri
 .card-title{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin-bottom:12px;display:flex;align-items:center;gap:6px;}
 .live-dot{width:7px;height:7px;border-radius:50%;background:var(--green);animation:pulse 1.5s infinite;flex-shrink:0;}
 @keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(.8)}}
-.capture-wrap{margin-bottom:12px;}
-.capture-label{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;padding:16px;border-radius:12px;background:linear-gradient(135deg,rgba(79,142,247,.15),rgba(79,142,247,.05));border:2px dashed rgba(79,142,247,.4);color:var(--accent);font-size:15px;font-weight:700;cursor:pointer;transition:all .2s;}
+.capture-label{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;padding:16px;border-radius:12px;background:linear-gradient(135deg,rgba(79,142,247,.15),rgba(79,142,247,.05));border:2px dashed rgba(79,142,247,.4);color:var(--accent);font-size:15px;font-weight:700;cursor:pointer;transition:all .2s;margin-bottom:12px;}
 .capture-label:hover{background:rgba(79,142,247,.2);border-color:var(--accent);}
 .order-preview-wrap{display:none;margin-bottom:12px;}
 .order-preview-wrap.show{display:block;}
-.order-preview-img{width:100%;max-height:260px;object-fit:contain;border-radius:10px;border:1px solid var(--border);display:block;-webkit-user-select:auto;user-select:auto;}
-.order-hint{font-size:11px;color:var(--muted);margin-top:6px;text-align:center;}
+.order-preview-img{width:100%;max-height:280px;object-fit:contain;border-radius:10px;border:1px solid var(--border);display:block;-webkit-user-select:text;user-select:text;}
+.order-hint{font-size:11px;color:var(--muted);margin-top:6px;text-align:center;line-height:1.5;}
 .order-tag{display:none;align-items:center;justify-content:space-between;background:rgba(79,142,247,.08);border:1px solid rgba(79,142,247,.25);border-radius:8px;padding:8px 12px;margin-bottom:12px;}
 .order-tag.show{display:flex;}
 .order-tag-label{font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.06em;}
 .order-tag-value{font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--accent);font-weight:700;margin-top:2px;}
 .order-tag-clear{background:none;border:none;color:var(--muted);font-size:16px;cursor:pointer;padding:0 4px;}
-.order-tag-clear:hover{color:var(--red);}
 .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
 .fg{display:flex;flex-direction:column;gap:5px;}
 .fg.full{grid-column:1/-1;}
@@ -62,7 +61,7 @@ input[type="date"]::-webkit-calendar-picker-indicator{filter:invert(.6);cursor:p
 .tbl-title{font-size:13px;font-weight:700;}
 .export-btn{background:var(--surface2);border:1px solid var(--border);color:var(--accent2);padding:6px 12px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Noto Sans TC',sans-serif;}
 .tbl-wrap{overflow-x:auto;border-radius:12px;border:1px solid var(--border);}
-table{width:100%;border-collapse:collapse;min-width:660px;}
+table{width:100%;border-collapse:collapse;min-width:640px;}
 thead th{background:var(--surface2);padding:9px 10px;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;text-align:left;white-space:nowrap;}
 tbody tr{border-top:1px solid var(--border);transition:background .1s;}
 tbody tr:hover{background:var(--surface2);}
@@ -75,8 +74,8 @@ tbody td{padding:8px 10px;font-size:12px;vertical-align:middle;}
 .c-pic{color:var(--text);font-weight:500;white-space:nowrap;}
 .c-remark{color:var(--muted);font-size:11px;max-width:70px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .thumb-mini{width:28px;height:28px;border-radius:4px;object-fit:cover;border:1px solid var(--border);cursor:pointer;margin-right:2px;vertical-align:middle;}
-.add-photo-label-tbl{display:inline-flex;align-items:center;padding:2px 7px;border:1px dashed var(--border);color:var(--muted);font-size:10px;border-radius:5px;cursor:pointer;font-family:'Noto Sans TC',sans-serif;white-space:nowrap;vertical-align:middle;transition:all .15s;}
-.add-photo-label-tbl:hover{border-color:var(--accent);color:var(--accent);}
+.add-photo-btn-tbl{background:none;border:1px dashed var(--border);color:var(--muted);font-size:10px;padding:2px 7px;border-radius:5px;cursor:pointer;font-family:'Noto Sans TC',sans-serif;white-space:nowrap;vertical-align:middle;}
+.add-photo-btn-tbl:hover{border-color:var(--accent);color:var(--accent);}
 .del-btn{background:none;border:none;color:var(--muted);cursor:pointer;font-size:14px;padding:2px 6px;border-radius:5px;}
 .del-btn:hover{color:var(--red);}
 .empty-state{text-align:center;padding:32px 0;color:var(--muted);font-size:12px;}
@@ -102,17 +101,20 @@ tbody td{padding:8px 10px;font-size:12px;vertical-align:middle;}
   </div>
 </div>
 
+<!-- 拍照取得訂單編號 -->
+
 <div class="card card-top-bar">
   <div class="card-title"><div class="live-dot"></div>拍照取得訂單編號</div>
-  <div class="capture-wrap">
-    <label class="capture-label" for="captureCamera">📷 開啟相機拍照</label>
-    <input type="file" id="captureCamera" accept="image/*" capture="environment" style="display:none" onchange="handleCapturePhoto(event)"/>
-  </div>
+  <!-- 不加 capture，iOS 會顯示「拍照」選項，拍完後可 Live Text 長按選字 -->
+  <label class="capture-label" for="captureInput">📷 開啟相機拍照</label>
+  <input type="file" id="captureInput" accept="image/*" style="display:none" onchange="handleCapture(event)"/>
   <div class="order-preview-wrap" id="orderPreviewWrap">
-    <img id="orderPreviewImg" class="order-preview-img" src="" alt="訂單圖片"/>
-    <div class="order-hint">📋 長按圖片可選取文字 → 複製訂單編號貼到下方欄位</div>
+    <img id="orderPreviewImg" class="order-preview-img" src="" alt=""/>
+    <div class="order-hint">長按圖片上的訂單編號文字 → 拷貝 → 貼到下方「訂單編號」欄位</div>
   </div>
 </div>
+
+<!-- 填寫退貨資料 -->
 
 <div class="card">
   <div class="card-title">填寫退貨資料</div>
@@ -147,7 +149,7 @@ tbody td{padding:8px 10px;font-size:12px;vertical-align:middle;}
     </div>
     <div class="fg">
       <label>負責人</label>
-      <input type="text" id="f_pic" placeholder="姓名 / Name" autocomplete="off" inputmode="text"/>
+      <input type="text" id="f_pic" placeholder="姓名 / Name" autocomplete="off"/>
     </div>
     <div class="fg">
       <label>日期</label>
@@ -170,6 +172,8 @@ tbody td{padding:8px 10px;font-size:12px;vertical-align:middle;}
   </div>
 </div>
 
+<!-- 紀錄列表 -->
+
 <div>
   <div class="tbl-header">
     <div class="tbl-title">退貨紀錄列表</div>
@@ -178,7 +182,7 @@ tbody td{padding:8px 10px;font-size:12px;vertical-align:middle;}
   <div class="tbl-wrap">
     <table>
       <thead>
-        <tr><th>#</th><th>日期</th><th>訂單編號</th><th>商品名稱</th><th>數量</th><th>負責人</th><th>備註</th><th>照片</th><th></th></tr>
+        <tr><th>#</th><th>日期</th><th>訂單編號</th><th>商品</th><th>數量</th><th>負責人</th><th>備註</th><th>照片</th><th></th></tr>
       </thead>
       <tbody id="tableBody">
         <tr><td colspan="9"><div class="empty-state"><div class="empty-icon">📋</div>尚無退貨紀錄</div></td></tr>
@@ -191,227 +195,255 @@ tbody td{padding:8px 10px;font-size:12px;vertical-align:middle;}
   <img id="lightboxImg" src=""/>
   <button class="lightbox-close" onclick="closeLightbox()">關閉</button>
 </div>
-<div id="addPhotoInputs"></div>
+<input type="file" id="addPhotoHidden" accept="image/*" multiple style="display:none"/>
 <div class="toast" id="toast"></div>
 
 <script>
-let records = JSON.parse(localStorage.getItem('rtn_v9')||'[]');
-let pendingPhotos = [];
-let photoStore = {};
+let records = JSON.parse(localStorage.getItem('rtn_v10')||'[]');
+let pendingPhotos = []; // base64 array
+let lightboxSrcs = [];  // 給 lightbox 用的 src 陣列（避免 inline base64 onclick）
+let addPhotoRecordId = null;
 
 function todayStr(){
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  const d=new Date();
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
 }
 document.getElementById('f_date').value = todayStr();
 renderTable();
 
-function handleCapturePhoto(event){
+// ── 拍照取得訂單編號 ──
+var captureBlobUrl = null;
+function handleCapture(event){
   const file = event.target.files[0];
-  if(!file) return;
-  event.target.value = '';
-  const reader = new FileReader();
-  reader.onload = e => {
-    document.getElementById('orderPreviewImg').src = e.target.result;
-    document.getElementById('orderPreviewWrap').classList.add('show');
-    showToast('📋 長按圖片選取文字，複製訂單編號');
-  };
-  reader.readAsDataURL(file);
+  if(!file){ event.target.value=''; return; }
+  if(captureBlobUrl) URL.revokeObjectURL(captureBlobUrl);
+  captureBlobUrl = URL.createObjectURL(file);
+  const img = document.getElementById('orderPreviewImg');
+  img.src = captureBlobUrl;
+  document.getElementById('orderPreviewWrap').classList.add('show');
+  showToast('長按圖片上的訂單編號文字可複製');
+  event.target.value='';
 }
 
 function syncOrderTag(){
   const val = document.getElementById('f_order').value.trim();
-  const tag = document.getElementById('orderTag');
-  if(val){ document.getElementById('orderTagValue').textContent = val; tag.classList.add('show'); }
-  else tag.classList.remove('show');
+  if(val){
+    document.getElementById('orderTagValue').textContent = val;
+    document.getElementById('orderTag').classList.add('show');
+  } else {
+    document.getElementById('orderTag').classList.remove('show');
+  }
 }
 
 function clearOrder(){
-  document.getElementById('f_order').value = '';
+  document.getElementById('f_order').value='';
   document.getElementById('orderTag').classList.remove('show');
   document.getElementById('orderPreviewWrap').classList.remove('show');
-  document.getElementById('orderPreviewImg').src = '';
+  document.getElementById('orderPreviewImg').src='';
 }
 
+// ── 附件照片（表單用）──
 function handlePhotos(event){
-  Array.from(event.target.files).forEach(file => {
+  const files = Array.from(event.target.files);
+  event.target.value='';
+  files.forEach(function(file){
     const reader = new FileReader();
-    reader.onload = e => { pendingPhotos.push(e.target.result); renderPhotoPreview(); };
+    reader.onload = function(e){
+      pendingPhotos.push(e.target.result);
+      renderPhotoPreview();
+    };
     reader.readAsDataURL(file);
   });
-  event.target.value = '';
 }
 
 function renderPhotoPreview(){
-  document.getElementById('photoPreview').innerHTML = pendingPhotos.map((_,i) => `
-    <div class="photo-thumb">
-      <img src="${pendingPhotos[i]}" onclick="openLightboxIdx(${i})"/>
-      <button class="photo-thumb-del" onclick="removePhoto(${i})">✕</button>
-    </div>`).join('');
+  // 用 data-idx 取代 inline base64 onclick，避免 HTML 解析錯誤
+  var html = '';
+  for(var i=0;i<pendingPhotos.length;i++){
+    html += '<div class="photo-thumb">';
+    html += '<img src="'+pendingPhotos[i]+'" data-idx="'+i+'" onclick="previewPending(this.dataset.idx)"/>';
+    html += '<button class="photo-thumb-del" data-idx="'+i+'" onclick="removePhoto(this.dataset.idx)">✕</button>';
+    html += '</div>';
+  }
+  document.getElementById('photoPreview').innerHTML = html;
 }
 
-function removePhoto(idx){ pendingPhotos.splice(idx,1); renderPhotoPreview(); }
+function previewPending(idx){
+  openLightbox(pendingPhotos[parseInt(idx)]);
+}
 
+function removePhoto(idx){
+  pendingPhotos.splice(parseInt(idx),1);
+  renderPhotoPreview();
+}
+
+// ── 新增紀錄 ──
 function addRecord(){
-  const order   = document.getElementById('f_order').value.trim().toUpperCase();
-  const product = document.getElementById('f_product').value.trim();
-  const qty     = Number(document.getElementById('f_qty').value||1);
-  const unit    = document.getElementById('f_unit').value;
-  const pic     = document.getElementById('f_pic').value.trim();
-  const date    = document.getElementById('f_date').value || todayStr();
-  const remark  = document.getElementById('f_remark').value.trim();
-  if(!order)    { showToast('⚠️ 請填寫訂單編號','#f7c94f','#0f1117'); return; }
-  if(!product)  { showToast('⚠️ 請填寫商品名稱','#f7c94f','#0f1117'); return; }
-  if(!qty||qty<1){ showToast('⚠️ 數量需大於 0','#f7c94f','#0f1117'); return; }
-  const record = { id:Date.now(), order, product, qty, unit, pic, date, remark, photos:[...pendingPhotos] };
+  var order   = document.getElementById('f_order').value.trim().toUpperCase();
+  var product = document.getElementById('f_product').value.trim();
+  var qty     = Number(document.getElementById('f_qty').value||1);
+  var unit    = document.getElementById('f_unit').value;
+  var pic     = document.getElementById('f_pic').value.trim();
+  var date    = document.getElementById('f_date').value || todayStr();
+  var remark  = document.getElementById('f_remark').value.trim();
+
+  if(!order)   { showToast('⚠️ 請填寫訂單編號','#f7c94f','#0f1117'); return; }
+  if(!product) { showToast('⚠️ 請填寫商品名稱','#f7c94f','#0f1117'); return; }
+  if(qty<1)    { showToast('⚠️ 數量需大於 0','#f7c94f','#0f1117'); return; }
+
+  var record = {
+    id: Date.now(),
+    order: order, product: product, qty: qty, unit: unit,
+    pic: pic, date: date, remark: remark,
+    photos: pendingPhotos.slice() // 複製陣列
+  };
   records.unshift(record);
   save();
   renderTable(record.id);
-  document.getElementById('f_product').value = '';
-  document.getElementById('f_qty').value = '1';
-  document.getElementById('f_unit').value = '';
-  document.getElementById('f_remark').value = '';
-  pendingPhotos = [];
+
+  document.getElementById('f_product').value='';
+  document.getElementById('f_qty').value='1';
+  document.getElementById('f_unit').value='';
+  document.getElementById('f_remark').value='';
+  pendingPhotos=[];
   renderPhotoPreview();
   document.getElementById('f_product').focus();
   showToast('✅ 已新增，可繼續新增商品');
 }
 
 function clearForm(){
-  ['f_order','f_product','f_pic','f_remark'].forEach(id => document.getElementById(id).value='');
-  document.getElementById('f_qty').value = '1';
-  document.getElementById('f_unit').value = '';
-  document.getElementById('f_date').value = todayStr();
-  pendingPhotos = [];
+  ['f_order','f_product','f_pic','f_remark'].forEach(function(id){ document.getElementById(id).value=''; });
+  document.getElementById('f_qty').value='1';
+  document.getElementById('f_unit').value='';
+  document.getElementById('f_date').value=todayStr();
+  pendingPhotos=[];
   renderPhotoPreview();
   document.getElementById('orderTag').classList.remove('show');
   document.getElementById('orderPreviewWrap').classList.remove('show');
-  document.getElementById('orderPreviewImg').src = '';
+  document.getElementById('orderPreviewImg').src='';
 }
 
-function triggerAddPhoto(recordId){
-  const inputId = 'addPhoto_' + recordId;
-  let input = document.getElementById(inputId);
-  if(!input){
-    const container = document.getElementById('addPhotoInputs');
-    input = document.createElement('input');
-    input.type = 'file';
-    input.id = inputId;
-    input.accept = 'image/*';
-    input.multiple = true;
-    input.style.display = 'none';
-    input.addEventListener('change', function(event){
-      const files = Array.from(event.target.files);
-      event.target.value = '';
-      if(!files.length) return;
-      const rec = records.find(r => r.id === recordId);
-      if(!rec) return;
-      if(!rec.photos) rec.photos = [];
-      let loaded = 0;
-      files.forEach(file => {
-        const reader = new FileReader();
-        reader.onload = e => {
-          rec.photos.push(e.target.result);
-          loaded++;
-          if(loaded === files.length){ save(); renderTable(); showToast('✅ 照片已新增'); }
-        };
-        reader.readAsDataURL(file);
-      });
-    });
-    container.appendChild(input);
-  }
-  input.click();
+// ── 補照片 ──
+var addPhotoHidden = document.getElementById('addPhotoHidden');
+addPhotoHidden.addEventListener('change', function(event){
+  var files = Array.from(event.target.files);
+  event.target.value='';
+  if(!files.length || !addPhotoRecordId) return;
+  var rec = records.find(function(r){ return r.id===addPhotoRecordId; });
+  if(!rec) return;
+  if(!rec.photos) rec.photos=[];
+  var loaded=0;
+  files.forEach(function(file){
+    var reader=new FileReader();
+    reader.onload=function(e){
+      rec.photos.push(e.target.result);
+      loaded++;
+      if(loaded===files.length){ save(); renderTable(); showToast('✅ 照片已新增'); }
+    };
+    reader.readAsDataURL(file);
+  });
+});
+
+function addPhotoToRecord(recordId){
+  addPhotoRecordId = recordId;
+  addPhotoHidden.click();
 }
 
+// ── 刪除 ──
 function deleteRecord(id){
   if(!confirm('確定刪除這筆退貨紀錄？')) return;
-  records = records.filter(r => r.id !== id);
+  records = records.filter(function(r){ return r.id!==id; });
   save(); renderTable(); showToast('🗑️ 已刪除');
 }
 
-function save(){ localStorage.setItem('rtn_v9', JSON.stringify(records)); }
+function save(){ localStorage.setItem('rtn_v10', JSON.stringify(records)); }
 
 function esc(v){
-  return String(v??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;');
+  return String(v==null?'':v)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
 function renderTable(flashId){
   document.getElementById('totalCount').textContent = records.length;
-  const tbody = document.getElementById('tableBody');
+  var tbody = document.getElementById('tableBody');
   if(!records.length){
-    tbody.innerHTML = `<tr><td colspan="9"><div class="empty-state"><div class="empty-icon">📋</div>尚無退貨紀錄</div></td></tr>`;
+    tbody.innerHTML='<tr><td colspan="9"><div class="empty-state"><div class="empty-icon">📋</div>尚無退貨紀錄</div></td></tr>';
     return;
   }
-  tbody.innerHTML = records.map((r,i) => {
-    const qtyUnit = r.qty + (r.unit ? ' ' + r.unit : '');
-    const photos = (r.photos||[]).map((src,pi) => {
-      const key = `r${r.id}_${pi}`;
-      photoStore[key] = src;
-      return `<img class="thumb-mini" src="${src}" onclick="openLightboxKey('${key}')"/>`;
-    }).join('');
-    return `<tr ${r.id===flashId?'class="flash"':''}>
-      <td class="c-num">${records.length-i}</td>
-      <td class="c-date">${esc(r.date||'—')}</td>
-      <td class="c-order" title="${esc(r.order)}">${esc(r.order)}</td>
-      <td class="c-product" title="${esc(r.product)}">${esc(r.product||'—')}</td>
-      <td class="c-qty">${esc(qtyUnit)}</td>
-      <td class="c-pic">${esc(r.pic||'—')}</td>
-      <td class="c-remark" title="${esc(r.remark)}">${esc(r.remark||'—')}</td>
-      <td>${photos}<label class="add-photo-label-tbl" onclick="triggerAddPhoto(${r.id})">＋補照片</label></td>
-      <td><button class="del-btn" onclick="deleteRecord(${r.id})">✕</button></td>
-    </tr>`;
-  }).join('');
+  // 重建 lightboxSrcs
+  lightboxSrcs = [];
+  var rows = '';
+  records.forEach(function(r, i){
+    var qtyUnit = r.qty + (r.unit ? ' '+r.unit : '');
+    var photoHtml = '';
+    (r.photos||[]).forEach(function(src){
+      var idx = lightboxSrcs.length;
+      lightboxSrcs.push(src);
+      photoHtml += '<img class="thumb-mini" src="'+src+'" data-idx="'+idx+'" onclick="openLightboxIdx(this.dataset.idx)"/>';
+    });
+    photoHtml += '<button class="add-photo-btn-tbl" data-rid="'+r.id+'" onclick="addPhotoToRecord(Number(this.dataset.rid))">＋補照片</button>';
+    rows += '<tr '+(r.id===flashId?'class="flash"':'')+'>'+ 
+      '<td class="c-num">'+(records.length-i)+'</td>'+ 
+      '<td class="c-date">'+esc(r.date||'—')+'</td>'+ 
+      '<td class="c-order" title="'+esc(r.order)+'">'+esc(r.order)+'</td>'+ 
+      '<td class="c-product" title="'+esc(r.product)+'">'+esc(r.product||'—')+'</td>'+ 
+      '<td class="c-qty">'+esc(qtyUnit)+'</td>'+ 
+      '<td class="c-pic">'+esc(r.pic||'—')+'</td>'+ 
+      '<td class="c-remark" title="'+esc(r.remark)+'">'+esc(r.remark||'—')+'</td>'+ 
+      '<td>'+photoHtml+'</td>'+ 
+      '<td><button class="del-btn" data-rid="'+r.id+'" onclick="deleteRecord(Number(this.dataset.rid))">✕</button></td>'+ 
+    '</tr>';
+  });
+  tbody.innerHTML = rows;
 }
 
 function exportCSV(){
   if(!records.length){ showToast('⚠️ 沒有資料','#f7c94f','#0f1117'); return; }
-  const header = ['#','日期','訂單編號','商品名稱','數量','單位','負責人','備註','照片數'];
-  const rows = records.map((r,i) => [
-    records.length-i, r.date, r.order, r.product, r.qty,
-    r.unit||'', r.pic||'', r.remark||'', (r.photos||[]).length
-  ]);
-  const csv = '\uFEFF' + [header,...rows].map(row =>
-    row.map(v => {
-      const s = String(v??'');
-      return s.includes(',')||s.includes('"')||s.includes('\n') ? `"${s.replace(/"/g,'""')}"` : s;
-    }).join(',')
-  ).join('\n');
-  const blob = new Blob([csv],{type:'text/csv;charset=utf-8;'});
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = `退貨紀錄_${todayStr()}.csv`;
+  var header=['#','日期','訂單編號','商品名稱','數量','單位','負責人','備註','照片數'];
+  var rows=records.map(function(r,i){
+    return [records.length-i,r.date,r.order,r.product,r.qty,r.unit||'',r.pic||'',r.remark||'',(r.photos||[]).length];
+  });
+  var csv='\uFEFF'+[header].concat(rows).map(function(row){
+    return row.map(function(v){
+      var s=String(v==null?'':v);
+      return (s.indexOf(',')>=0||s.indexOf('"')>=0||s.indexOf('\n')>=0)?'"'+s.replace(/"/g,'""')+'"':s;
+    }).join(',');
+  }).join('\n');
+  var blob=new Blob([csv],{type:'text/csv;charset=utf-8;'});
+  var a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download='退貨紀錄_'+todayStr()+'.csv';
   document.body.appendChild(a); a.click();
   document.body.removeChild(a); URL.revokeObjectURL(a.href);
   showToast('⬇ CSV 已匯出');
 }
 
-function openLightboxKey(key){
-  const src = photoStore[key];
-  if(!src) return;
-  document.getElementById('lightboxImg').src = src;
+function openLightbox(src){
+  document.getElementById('lightboxImg').src=src;
   document.getElementById('lightbox').classList.add('show');
 }
 function openLightboxIdx(idx){
-  const src = pendingPhotos[idx];
-  if(!src) return;
-  document.getElementById('lightboxImg').src = src;
-  document.getElementById('lightbox').classList.add('show');
+  var src=lightboxSrcs[parseInt(idx)];
+  if(src) openLightbox(src);
 }
 function closeLightbox(){
   document.getElementById('lightbox').classList.remove('show');
-  document.getElementById('lightboxImg').src = '';
+  document.getElementById('lightboxImg').src='';
 }
 
-function showToast(msg, bg='var(--green)', color='#0f1117'){
-  const t = document.getElementById('toast');
-  t.textContent = msg; t.style.background = bg; t.style.color = color;
+function showToast(msg,bg,color){
+  bg=bg||'var(--green)'; color=color||'#0f1117';
+  var t=document.getElementById('toast');
+  t.textContent=msg; t.style.background=bg; t.style.color=color;
   t.classList.add('show'); clearTimeout(t._timer);
-  t._timer = setTimeout(() => t.classList.remove('show'), 2500);
+  t._timer=setTimeout(function(){ t.classList.remove('show'); },2500);
 }
 
-document.querySelectorAll('input[type="text"],input[type="number"]').forEach(el => {
-  el.addEventListener('keydown', e => { if(e.key==='Enter') addRecord(); });
+document.querySelectorAll('input[type="text"],input[type="number"]').forEach(function(el){
+  el.addEventListener('keydown',function(e){ if(e.key==='Enter') addRecord(); });
 });
 </script>
+
 </body>
 </html>
