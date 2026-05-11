@@ -88,7 +88,7 @@ tbody td{padding:8px 10px;font-size:12px;vertical-align:middle;}
 .toast.show{transform:translateX(-50%) translateY(0);}
 @keyframes rowFlash{0%{background:rgba(79,142,247,.2)}100%{background:transparent}}
 .flash{animation:rowFlash .9s ease-out;}
-</style>
+ .steps-wrap{display:flex;flex-direction:column;gap:8px;} .step{display:flex;align-items:center;gap:10px;font-size:13px;color:var(–text);} .step-num{width:22px;height:22px;border-radius:50%;background:var(–accent);color:#fff;font-size:11px;font-weight:900;display:flex;align-items:center;justify-content:center;flex-shrink:0;} .dl-photo-btn{background:none;border:1px solid var(–border);color:var(–accent);font-size:10px;padding:2px 7px;border-radius:5px;cursor:pointer;font-family:‘Noto Sans TC’,sans-serif;white-space:nowrap;vertical-align:middle;margin-left:4px;} .dl-photo-btn:hover{background:rgba(79,142,247,.1);} </style>
 </head>
 <body>
 
@@ -101,17 +101,10 @@ tbody td{padding:8px 10px;font-size:12px;vertical-align:middle;}
   </div>
 </div>
 
-<!-- 拍照取得訂單編號 -->
-
+<!-- 操作說明 -->
 <div class="card card-top-bar">
-  <div class="card-title"><div class="live-dot"></div>拍照取得訂單編號</div>
-  <!-- 不加 capture，iOS 會顯示「拍照」選項，拍完後可 Live Text 長按選字 -->
-  <label class="capture-label" for="captureInput">📷 開啟相機拍照</label>
-  <input type="file" id="captureInput" accept="image/*" style="display:none" onchange="handleCapture(event)"/>
-  <div class="order-preview-wrap" id="orderPreviewWrap">
-    <img id="orderPreviewImg" class="order-preview-img" src="" alt=""/>
-    <div class="order-hint">長按圖片上的訂單編號文字 → 拷貝 → 貼到下方「訂單編號」欄位</div>
-  </div>
+  <div class="card-title"><div class="live-dot"></div>如何取得訂單編號</div>
+  <div class="order-hint">開啟原相機對準訂單編號 → 點右下角文字鎖定圖示選取訂單編號 → 拷貝 → 回到此頁面貼上到訂單編號欄位</div>
 </div>
 
 <!-- 填寫退貨資料 -->
@@ -212,16 +205,8 @@ document.getElementById('f_date').value = todayStr();
 renderTable();
 
 // ── 拍照取得訂單編號 ──
-var captureBlobUrl = null;
 function handleCapture(event){
-  const file = event.target.files[0];
-  if(!file){ event.target.value=''; return; }
-  if(captureBlobUrl) URL.revokeObjectURL(captureBlobUrl);
-  captureBlobUrl = URL.createObjectURL(file);
-  const img = document.getElementById('orderPreviewImg');
-  img.src = captureBlobUrl;
-  document.getElementById('orderPreviewWrap').classList.add('show');
-  showToast('長按圖片上的訂單編號文字可複製');
+  // 不做任何事，讓使用者在相機裡用 Live Text 複製後取消回來貼上
   event.target.value='';
 }
 
@@ -383,16 +368,19 @@ function renderTable(flashId){
       photoHtml += '<img class="thumb-mini" src="'+src+'" data-idx="'+idx+'" onclick="openLightboxIdx(this.dataset.idx)"/>';
     });
     photoHtml += '<button class="add-photo-btn-tbl" data-rid="'+r.id+'" onclick="addPhotoToRecord(Number(this.dataset.rid))">＋補照片</button>';
-    rows += '<tr '+(r.id===flashId?'class="flash"':'')+'>'+ 
-      '<td class="c-num">'+(records.length-i)+'</td>'+ 
-      '<td class="c-date">'+esc(r.date||'—')+'</td>'+ 
-      '<td class="c-order" title="'+esc(r.order)+'">'+esc(r.order)+'</td>'+ 
-      '<td class="c-product" title="'+esc(r.product)+'">'+esc(r.product||'—')+'</td>'+ 
-      '<td class="c-qty">'+esc(qtyUnit)+'</td>'+ 
-      '<td class="c-pic">'+esc(r.pic||'—')+'</td>'+ 
-      '<td class="c-remark" title="'+esc(r.remark)+'">'+esc(r.remark||'—')+'</td>'+ 
-      '<td>'+photoHtml+'</td>'+ 
-      '<td><button class="del-btn" data-rid="'+r.id+'" onclick="deleteRecord(Number(this.dataset.rid))">✕</button></td>'+ 
+    if((r.photos||[]).length > 0){
+      photoHtml += '<button class="dl-photo-btn" data-rid="'+r.id+'" onclick="downloadPhotos(Number(this.dataset.rid))">⬇ 下載照片</button>';
+    }
+    rows += '<tr '+(r.id===flashId?'class="flash"':'')+'>'+
+      '<td class="c-num">'+(records.length-i)+'</td>'+
+      '<td class="c-date">'+esc(r.date||'—')+'</td>'+
+      '<td class="c-order" title="'+esc(r.order)+'">'+esc(r.order)+'</td>'+
+      '<td class="c-product" title="'+esc(r.product)+'">'+esc(r.product||'—')+'</td>'+
+      '<td class="c-qty">'+esc(qtyUnit)+'</td>'+
+      '<td class="c-pic">'+esc(r.pic||'—')+'</td>'+
+      '<td class="c-remark" title="'+esc(r.remark)+'">'+esc(r.remark||'—')+'</td>'+
+      '<td>'+photoHtml+'</td>'+
+      '<td><button class="del-btn" data-rid="'+r.id+'" onclick="deleteRecord(Number(this.dataset.rid))">✕</button></td>'+
     '</tr>';
   });
   tbody.innerHTML = rows;
@@ -427,6 +415,21 @@ function openLightboxIdx(idx){
   var src=lightboxSrcs[parseInt(idx)];
   if(src) openLightbox(src);
 }
+
+function downloadPhotos(recordId){
+  var rec = records.find(function(r){ return r.id===recordId; });
+  if(!rec || !(rec.photos||[]).length){ showToast('⚠️ 此紀錄沒有照片','#f7c94f','#0f1117'); return; }
+  rec.photos.forEach(function(src, i){
+    var a = document.createElement('a');
+    a.href = src;
+    a.download = rec.order + '_' + (i+1) + '.jpg';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  });
+  showToast('⬇ 照片下載中（'+rec.photos.length+'張）');
+}
+
 function closeLightbox(){
   document.getElementById('lightbox').classList.remove('show');
   document.getElementById('lightboxImg').src='';
