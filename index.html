@@ -6,6 +6,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>電商退貨管理系統</title>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet"/>
+<script src="https://cdn.jsdelivr.net/npm/exceljs@4.3.0/dist/exceljs.min.js"></script>
 <style>
 :root{--bg:#0f1117;--surface:#1a1d27;--surface2:#22263a;--border:#2e3350;--accent:#4f8ef7;--accent2:#f7c94f;--green:#3ecf8e;--red:#f76f6f;--text:#e8eaf6;--muted:#7c82a3;}
 *{box-sizing:border-box;margin:0;padding:0;}
@@ -88,7 +89,14 @@ tbody td{padding:8px 10px;font-size:12px;vertical-align:middle;}
 .toast.show{transform:translateX(-50%) translateY(0);}
 @keyframes rowFlash{0%{background:rgba(79,142,247,.2)}100%{background:transparent}}
 .flash{animation:rowFlash .9s ease-out;}
- .steps-wrap{display:flex;flex-direction:column;gap:8px;} .step{display:flex;align-items:center;gap:10px;font-size:13px;color:var(–text);} .step-num{width:22px;height:22px;border-radius:50%;background:var(–accent);color:#fff;font-size:11px;font-weight:900;display:flex;align-items:center;justify-content:center;flex-shrink:0;} .dl-photo-btn{background:none;border:1px solid var(–border);color:var(–accent);font-size:10px;padding:2px 7px;border-radius:5px;cursor:pointer;font-family:‘Noto Sans TC’,sans-serif;white-space:nowrap;vertical-align:middle;margin-left:4px;} .dl-photo-btn:hover{background:rgba(79,142,247,.1);} </style>
+
+.steps-wrap{display:flex;flex-direction:column;gap:8px;}
+.step{display:flex;align-items:center;gap:10px;font-size:13px;color:var(–text);}
+.step-num{width:22px;height:22px;border-radius:50%;background:var(–accent);color:#fff;font-size:11px;font-weight:900;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.dl-photo-btn{background:none;border:1px solid var(–border);color:var(–accent);font-size:10px;padding:2px 7px;border-radius:5px;cursor:pointer;font-family:‘Noto Sans TC’,sans-serif;white-space:nowrap;vertical-align:middle;margin-left:4px;}
+.dl-photo-btn:hover{background:rgba(79,142,247,.1);}
+</style>
+
 </head>
 <body>
 
@@ -102,6 +110,7 @@ tbody td{padding:8px 10px;font-size:12px;vertical-align:middle;}
 </div>
 
 <!-- 操作說明 -->
+
 <div class="card card-top-bar">
   <div class="card-title"><div class="live-dot"></div>如何取得訂單編號</div>
   <div class="order-hint">開啟原相機對準訂單編號 → 點右下角文字鎖定圖示選取訂單編號 → 拷貝 → 回到此頁面貼上到訂單編號欄位</div>
@@ -170,7 +179,7 @@ tbody td{padding:8px 10px;font-size:12px;vertical-align:middle;}
 <div>
   <div class="tbl-header">
     <div class="tbl-title">退貨紀錄列表</div>
-    <button class="export-btn" onclick="exportCSV()">⬇ 匯出 CSV</button>
+    <button class="export-btn" onclick="exportCSV()">⬇ 匯出 Excel</button>
   </div>
   <div class="tbl-wrap">
     <table>
@@ -242,15 +251,25 @@ function handlePhotos(event){
 }
 
 function renderPhotoPreview(){
-  // 用 data-idx 取代 inline base64 onclick，避免 HTML 解析錯誤
-  var html = '';
-  for(var i=0;i<pendingPhotos.length;i++){
-    html += '<div class="photo-thumb">';
-    html += '<img src="'+pendingPhotos[i]+'" data-idx="'+i+'" onclick="previewPending(this.dataset.idx)"/>';
-    html += '<button class="photo-thumb-del" data-idx="'+i+'" onclick="removePhoto(this.dataset.idx)">✕</button>';
-    html += '</div>';
-  }
-  document.getElementById('photoPreview').innerHTML = html;
+  var wrap = document.getElementById('photoPreview');
+  wrap.innerHTML = '';
+  pendingPhotos.forEach(function(src, i){
+    var div = document.createElement('div');
+    div.className = 'photo-thumb';
+
+    var img = document.createElement('img');
+    img.src = src;
+    img.addEventListener('click', function(){ openLightbox(src); });
+
+    var btn = document.createElement('button');
+    btn.className = 'photo-thumb-del';
+    btn.textContent = '✕';
+    btn.addEventListener('click', function(){ removePhoto(i); });
+
+    div.appendChild(img);
+    div.appendChild(btn);
+    wrap.appendChild(div);
+  });
 }
 
 function previewPending(idx){
@@ -258,7 +277,7 @@ function previewPending(idx){
 }
 
 function removePhoto(idx){
-  pendingPhotos.splice(parseInt(idx),1);
+  pendingPhotos.splice(idx, 1);
   renderPhotoPreview();
 }
 
@@ -371,16 +390,16 @@ function renderTable(flashId){
     if((r.photos||[]).length > 0){
       photoHtml += '<button class="dl-photo-btn" data-rid="'+r.id+'" onclick="downloadPhotos(Number(this.dataset.rid))">⬇ 下載照片</button>';
     }
-    rows += '<tr '+(r.id===flashId?'class="flash"':'')+'>'+
-      '<td class="c-num">'+(records.length-i)+'</td>'+
-      '<td class="c-date">'+esc(r.date||'—')+'</td>'+
-      '<td class="c-order" title="'+esc(r.order)+'">'+esc(r.order)+'</td>'+
-      '<td class="c-product" title="'+esc(r.product)+'">'+esc(r.product||'—')+'</td>'+
-      '<td class="c-qty">'+esc(qtyUnit)+'</td>'+
-      '<td class="c-pic">'+esc(r.pic||'—')+'</td>'+
-      '<td class="c-remark" title="'+esc(r.remark)+'">'+esc(r.remark||'—')+'</td>'+
-      '<td>'+photoHtml+'</td>'+
-      '<td><button class="del-btn" data-rid="'+r.id+'" onclick="deleteRecord(Number(this.dataset.rid))">✕</button></td>'+
+    rows += '<tr '+(r.id===flashId?'class="flash"':'')+'>'+ 
+      '<td class="c-num">'+(i+1)+'</td>'+ 
+      '<td class="c-date">'+esc(r.date||'—')+'</td>'+ 
+      '<td class="c-order" title="'+esc(r.order)+'">'+esc(r.order)+'</td>'+ 
+      '<td class="c-product" title="'+esc(r.product)+'">'+esc(r.product||'—')+'</td>'+ 
+      '<td class="c-qty">'+esc(qtyUnit)+'</td>'+ 
+      '<td class="c-pic">'+esc(r.pic||'—')+'</td>'+ 
+      '<td class="c-remark" title="'+esc(r.remark)+'">'+esc(r.remark||'—')+'</td>'+ 
+      '<td>'+photoHtml+'</td>'+ 
+      '<td><button class="del-btn" data-rid="'+r.id+'" onclick="deleteRecord(Number(this.dataset.rid))">✕</button></td>'+ 
     '</tr>';
   });
   tbody.innerHTML = rows;
@@ -388,24 +407,77 @@ function renderTable(flashId){
 
 function exportCSV(){
   if(!records.length){ showToast('⚠️ 沒有資料','#f7c94f','#0f1117'); return; }
-  var header=['#','日期','訂單編號','商品名稱','數量','單位','負責人','備註','照片數'];
-  var rows=records.map(function(r,i){
-    return [records.length-i,r.date,r.order,r.product,r.qty,r.unit||'',r.pic||'',r.remark||'',(r.photos||[]).length];
+  showToast('⏳ 產生 Excel 中...');
+
+  var sorted = records.slice().reverse();
+  var workbook = new ExcelJS.Workbook();
+  var sheet = workbook.addWorksheet('退貨紀錄');
+
+  // 欄寬設定
+  sheet.columns = [
+    {header:'#',        key:'num',     width:5},
+    {header:'日期',     key:'date',    width:13},
+    {header:'訂單編號', key:'order',   width:22},
+    {header:'商品名稱', key:'product', width:20},
+    {header:'數量',     key:'qty',     width:7},
+    {header:'單位',     key:'unit',    width:7},
+    {header:'負責人',   key:'pic',     width:10},
+    {header:'備註',     key:'remark',  width:18},
+    {header:'照片',     key:'photo',   width:16},
+  ];
+
+  // 標頭樣式
+  sheet.getRow(1).eachCell(function(cell){
+    cell.font = {bold:true, color:{argb:'FFFFFFFF'}};
+    cell.fill = {type:'pattern', pattern:'solid', fgColor:{argb:'FF4F8EF7'}};
+    cell.alignment = {vertical:'middle', horizontal:'center'};
   });
-  var csv='\uFEFF'+[header].concat(rows).map(function(row){
-    return row.map(function(v){
-      var s=String(v==null?'':v);
-      return (s.indexOf(',')>=0||s.indexOf('"')>=0||s.indexOf('\n')>=0)?'"'+s.replace(/"/g,'""')+'"':s;
-    }).join(',');
-  }).join('\n');
-  var blob=new Blob([csv],{type:'text/csv;charset=utf-8;'});
-  var a=document.createElement('a');
-  a.href=URL.createObjectURL(blob);
-  a.download='退貨紀錄_'+todayStr()+'.csv';
-  document.body.appendChild(a); a.click();
-  document.body.removeChild(a); URL.revokeObjectURL(a.href);
-  showToast('⬇ CSV 已匯出');
+
+  var imgPromises = sorted.map(function(r, i){
+    var rowIdx = i + 2;
+    var row = sheet.addRow({
+      num:    i+1,
+      date:   r.date||'',
+      order:  r.order||'',
+      product:r.product||'',
+      qty:    r.qty||'',
+      unit:   r.unit||'',
+      pic:    r.pic||'',
+      remark: r.remark||'',
+      photo:  (r.photos&&r.photos.length)?r.photos.length+'張':'',
+    });
+    row.height = 60;
+    row.alignment = {vertical:'middle'};
+
+    // 嵌入第一張照片
+    if(r.photos && r.photos.length > 0){
+      var src = r.photos[0];
+      var base64 = src.split(',')[1];
+      var ext = src.indexOf('image/png')>-1 ? 'png' : 'jpeg';
+      var imgId = workbook.addImage({ base64:base64, extension:ext });
+      sheet.addImage(imgId, {
+        tl:{ col:8, row:rowIdx-1 },
+        br:{ col:9, row:rowIdx },
+        editAs:'oneCell'
+      });
+      return Promise.resolve();
+    }
+    return Promise.resolve();
+  });
+
+  Promise.all(imgPromises).then(function(){
+    workbook.xlsx.writeBuffer().then(function(buffer){
+      var blob = new Blob([buffer], {type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+      var a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = '退貨紀錄_' + todayStr() + '.xlsx';
+      document.body.appendChild(a); a.click();
+      document.body.removeChild(a); URL.revokeObjectURL(a.href);
+      showToast('⬇ Excel 已匯出（含照片）');
+    });
+  });
 }
+
 
 function openLightbox(src){
   document.getElementById('lightboxImg').src=src;
@@ -415,7 +487,6 @@ function openLightboxIdx(idx){
   var src=lightboxSrcs[parseInt(idx)];
   if(src) openLightbox(src);
 }
-
 function downloadPhotos(recordId){
   var rec = records.find(function(r){ return r.id===recordId; });
   if(!rec || !(rec.photos||[]).length){ showToast('⚠️ 此紀錄沒有照片','#f7c94f','#0f1117'); return; }
