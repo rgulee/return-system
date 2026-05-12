@@ -598,6 +598,44 @@ tbody td{
 }
 
 .flash{animation:rowFlash .9s ease-out;}
+
+.dl-photo-btn{
+  background:none;
+  border:1px dashed var(--border);
+  color:var(--accent2);
+  font-size:10px;
+  padding:2px 7px;
+  border-radius:5px;
+  cursor:pointer;
+  font-family:'Noto Sans TC',sans-serif;
+  white-space:nowrap;
+  vertical-align:middle;
+  margin-left:4px;
+}
+.dl-photo-btn:hover{
+  border-color:var(--accent2);
+  color:var(--accent2);
+}
+.download-photo-btn{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  padding:9px 16px;
+  border-radius:8px;
+  border:1px dashed var(--border);
+  background:var(--bg);
+  color:var(--accent2);
+  font-size:12px;
+  font-weight:700;
+  cursor:pointer;
+  transition:all .15s;
+  margin-bottom:8px;
+  margin-left:6px;
+  font-family:'Noto Sans TC',sans-serif;
+}
+.download-photo-btn:hover{
+  border-color:var(--accent2);
+}
 </style>
 </head>
 
@@ -642,7 +680,7 @@ tbody td{
       <select id="f_store">
         <option value="">— 選擇賣場 —</option>
         <option>蝦皮-神準-未取貨</option>
-        <option>蝦皮-神準-退貨退款</option>
+        <option>蝦皮-退貨退款</option>
         <option>蝦皮-ONEFU-未取貨</option>
         <option>蝦皮-ONEFU-退貨退款</option>
         <option>酷澎-神準-未取貨</option>
@@ -699,6 +737,7 @@ tbody td{
     <div class="photo-section">
       <span class="photo-label-txt">附件照片（可多張）</span>
       <label class="photo-add-label" for="photoInput">📷 拍照 / 選取照片</label>
+      <button type="button" class="download-photo-btn" onclick="downloadPendingPhotos()">⬇ 下載目前照片</button>
       <input type="file" id="photoInput" accept="image/*" multiple style="display:none" onchange="handlePhotos(event)"/>
       <div class="photo-preview-wrap" id="photoPreview"></div>
     </div>
@@ -1142,6 +1181,7 @@ function renderTable(flashId){
       '<td id="photoCell_' + r.id + '">' +
         '<span style="color:var(--muted);font-size:11px">' + (photoCount > 0 ? photoCount + '張' : '') + '</span>' +
         '<button class="add-photo-btn-tbl" data-rid="' + r.id + '" onclick="addPhotoToRecord(Number(this.dataset.rid))">＋補照片</button>' +
+        (photoCount > 0 ? '<button class="dl-photo-btn" data-rid="' + r.id + '" onclick="downloadRecordPhotos(Number(this.dataset.rid))">⬇照片</button>' : '') +
       '</td>' +
       '<td><button class="del-btn" data-rid="' + r.id + '" onclick="deleteRecord(Number(this.dataset.rid))">✕</button></td>' +
     '</tr>';
@@ -1196,6 +1236,16 @@ function renderTable(flashId){
       });
 
       cell.appendChild(addBtn);
+
+      if((r.photoKeys || []).length > 0){
+        const dlBtn = document.createElement('button');
+        dlBtn.className = 'dl-photo-btn';
+        dlBtn.textContent = '⬇照片';
+        dlBtn.addEventListener('click',function(){
+          downloadRecordPhotos(r.id);
+        });
+        cell.appendChild(dlBtn);
+      }
     });
   });
 }
@@ -1208,12 +1258,32 @@ function exportExcel(){
 
   showToast('⏳ 產生 Excel 中...');
 
-  const sorted = records.slice().reverse();
+  // 依訂單編號分組；同訂單編號匯出時合併儲存格
+  const groupMap = {};
+  const groups = [];
+
+  records.slice().reverse().forEach(function(r){
+    const key = r.order || '未填訂單';
+    if(!groupMap[key]){
+      groupMap[key] = {
+        order:key,
+        date:r.date || '',
+        store:r.store || '',
+        pic:r.pic || '',
+        remark:r.remark || '',
+        items:[]
+      };
+      groups.push(groupMap[key]);
+    }
+    groupMap[key].items.push(r);
+  });
 
   const allKeys = [];
-  sorted.forEach(function(r){
-    (r.photoKeys || []).forEach(function(k){
-      if(allKeys.indexOf(k) < 0) allKeys.push(k);
+  groups.forEach(function(g){
+    g.items.forEach(function(r){
+      (r.photoKeys || []).forEach(function(k){
+        if(allKeys.indexOf(k) < 0) allKeys.push(k);
+      });
     });
   });
 
@@ -1223,7 +1293,6 @@ function exportExcel(){
     });
   })).then(function(photoResults){
     const photoMap = {};
-
     photoResults.forEach(function(p){
       if(p.src) photoMap[p.key] = p.src;
     });
@@ -1234,84 +1303,127 @@ function exportExcel(){
     ws.columns = [
       {header:'#',key:'num',width:5},
       {header:'日期',key:'date',width:13},
-      {header:'訂單編號',key:'order',width:22},
-      {header:'賣場',key:'store',width:18},
-      {header:'商品名稱',key:'product',width:18},
-      {header:'數量',key:'qty',width:7},
-      {header:'單位',key:'unit',width:7},
-      {header:'負責人',key:'pic',width:10},
-      {header:'備註',key:'remark',width:18},
-      {header:'照片1',key:'p1',width:14}
+      {header:'訂單編號',key:'order',width:24},
+      {header:'賣場',key:'store',width:22},
+      {header:'商品名稱',key:'product',width:22},
+      {header:'數量',key:'qty',width:8},
+      {header:'單位',key:'unit',width:8},
+      {header:'負責人',key:'pic',width:12},
+      {header:'備註',key:'remark',width:20},
+      {header:'照片1',key:'p1',width:16}
     ];
 
+    ws.getRow(1).height = 24;
     ws.getRow(1).eachCell(function(cell){
       cell.font = {bold:true,color:{argb:'FFFFFFFF'}};
       cell.fill = {type:'pattern',pattern:'solid',fgColor:{argb:'FF4F8EF7'}};
       cell.alignment = {vertical:'middle',horizontal:'center'};
+      cell.border = {
+        top:{style:'thin'}, left:{style:'thin'}, bottom:{style:'thin'}, right:{style:'thin'}
+      };
     });
 
-    sorted.forEach(function(r, i){
-      const rowIdx = i + 2;
+    let rowIdx = 2;
 
-      ws.addRow({
-        num:i+1,
-        date:r.date || '',
-        order:r.order || '',
-        store:r.store || '',
-        product:r.product || '',
-        qty:r.qty || '',
-        unit:r.unit || '',
-        pic:r.pic || '',
-        remark:r.remark || ''
+    groups.forEach(function(g, gi){
+      const startRow = rowIdx;
+
+      g.items.forEach(function(r, itemIdx){
+        ws.addRow({
+          num: gi + 1,
+          date: g.date,
+          order: g.order,
+          store: g.store,
+          product: r.product || '',
+          qty: r.qty || '',
+          unit: r.unit || '',
+          pic: g.pic,
+          remark: itemIdx === 0 ? g.remark : ''
+        });
+
+        const row = ws.getRow(rowIdx);
+        row.height = 80;
+        row.alignment = {vertical:'middle', horizontal:'center', wrapText:true};
+        row.eachCell(function(cell){
+          cell.border = {
+            top:{style:'thin'}, left:{style:'thin'}, bottom:{style:'thin'}, right:{style:'thin'}
+          };
+        });
+
+        // 每筆商品列最多嵌入第一張照片，避免 Excel 檔損毀
+        (r.photoKeys || []).slice(0,1).forEach(function(k){
+          const src = photoMap[k];
+          if(!src) return;
+          try{
+            const base64 = src.split(',')[1];
+            const ext = src.includes('image/png') ? 'png' : 'jpg';
+            const imgId = wb.addImage({base64:base64, extension:ext});
+            ws.addImage(imgId,{tl:{col:9,row:rowIdx-1}, br:{col:10,row:rowIdx}, editAs:'oneCell'});
+          }catch(e){}
+        });
+
+        rowIdx++;
       });
 
-      const row = ws.getRow(rowIdx);
-      row.height = 80;
-      row.alignment = {vertical:'middle'};
-
-      (r.photoKeys || []).slice(0,1).forEach(function(k){
-        const src = photoMap[k];
-        if(!src) return;
-
-        try{
-          const base64 = src.split(',')[1];
-          const ext = src.includes('image/png') ? 'png' : 'jpg';
-
-          const imgId = wb.addImage({
-            base64:base64,
-            extension:ext
-          });
-
-          ws.addImage(imgId,{
-            tl:{col:9,row:rowIdx-1},
-            br:{col:10,row:rowIdx},
-            editAs:'oneCell'
-          });
-        }catch(e){}
+      const endRow = rowIdx - 1;
+      if(endRow > startRow){
+        ['A','B','C','D','H'].forEach(function(col){
+          ws.mergeCells(col + startRow + ':' + col + endRow);
+        });
+      }
+      ['A','B','C','D','H'].forEach(function(col){
+        ws.getCell(col + startRow).alignment = {vertical:'middle',horizontal:'center',wrapText:true};
       });
     });
 
-    wb.xlsx.writeBuffer({
-      useStyles:true,
-      useSharedStrings:true
-    }).then(function(buffer){
-      const blob = new Blob(
-        [buffer],
-        {type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}
-      );
-
+    wb.xlsx.writeBuffer({useStyles:true, useSharedStrings:true}).then(function(buffer){
+      const blob = new Blob([buffer], {type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
       const a = document.createElement('a');
       a.href = URL.createObjectURL(blob);
       a.download = '退貨紀錄_' + todayStr() + '.xlsx';
-
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(a.href);
-
-      showToast('⬇ Excel 已匯出（含照片）');
+      showToast('⬇ Excel 已匯出（同訂單已合併）');
     });
   });
+}
+
+async function downloadPendingPhotos(){
+  if(!pendingPhotos.length){
+    showToast('⚠️ 目前沒有照片','#f7c94f','#0f1117');
+    return;
+  }
+  pendingPhotos.forEach(function(p, i){
+    downloadDataUrl(p.src, '未新增照片_' + todayStr() + '_' + (i+1) + '.jpg');
+  });
+  showToast('⬇ 照片下載中（iPhone 需到下載項目另存相簿）');
+}
+
+async function downloadRecordPhotos(recordId){
+  const rec = records.find(function(r){ return r.id === recordId; });
+  if(!rec || !(rec.photoKeys || []).length){
+    showToast('⚠️ 此紀錄沒有照片','#f7c94f','#0f1117');
+    return;
+  }
+  const photos = await Promise.all((rec.photoKeys || []).map(function(k){ return dbGet(k); }));
+  let count = 0;
+  photos.forEach(function(src, i){
+    if(!src) return;
+    count++;
+    downloadDataUrl(src, (rec.order || '退貨照片') + '_' + (i+1) + '.jpg');
+  });
+  showToast('⬇ 照片下載中（' + count + '張）');
+}
+
+function downloadDataUrl(src, filename){
+  const a = document.createElement('a');
+  a.href = src;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
 }
 
 function openLightbox(src){
