@@ -3,6 +3,9 @@
 <html lang="zh-TW">
 <head>
 <meta charset="UTF-8"/>
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
+<meta http-equiv="Pragma" content="no-cache"/>
+<meta http-equiv="Expires" content="0"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>電商退貨管理系統</title>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet"/>
@@ -237,16 +240,41 @@ function clearOrder(){
 }
 
 // ── 附件照片（表單用）──
+function compressImage(file, callback){
+  var reader = new FileReader();
+  reader.onload = function(e){
+    var img = new Image();
+    img.onload = function(){
+      var maxSize = 900;
+      var w = img.width;
+      var h = img.height;
+      if(w > h && w > maxSize){ h = Math.round(h * maxSize / w); w = maxSize; }
+      else if(h >= w && h > maxSize){ w = Math.round(w * maxSize / h); h = maxSize; }
+
+      var canvas = document.createElement('canvas');
+      canvas.width = w;
+      canvas.height = h;
+      var ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, w, h);
+
+      callback(canvas.toDataURL('image/jpeg', 0.68));
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
 function handlePhotos(event){
   const files = Array.from(event.target.files);
   event.target.value='';
+  if(!files.length) return;
+
   files.forEach(function(file){
-    const reader = new FileReader();
-    reader.onload = function(e){
-      pendingPhotos.push(e.target.result);
+    compressImage(file, function(dataUrl){
+      pendingPhotos.push(dataUrl);
       renderPhotoPreview();
-    };
-    reader.readAsDataURL(file);
+      showToast('✅ 照片已壓縮加入');
+    });
   });
 }
 
@@ -302,7 +330,10 @@ function addRecord(){
     photos: pendingPhotos.slice() // 複製陣列
   };
   records.unshift(record);
-  save();
+  if(!save()){
+    records.shift();
+    return;
+  }
   renderTable(record.id);
 
   document.getElementById('f_product').value='';
@@ -342,7 +373,9 @@ addPhotoHidden.addEventListener('change', function(event){
     reader.onload=function(e){
       rec.photos.push(e.target.result);
       loaded++;
-      if(loaded===files.length){ save(); renderTable(); showToast('✅ 照片已新增'); }
+      if(loaded===files.length){
+          if(save()){ renderTable(); showToast('✅ 照片已新增'); }
+        }
     };
     reader.readAsDataURL(file);
   });
@@ -360,7 +393,15 @@ function deleteRecord(id){
   save(); renderTable(); showToast('🗑️ 已刪除');
 }
 
-function save(){ localStorage.setItem('rtn_v10', JSON.stringify(records)); }
+function save(){
+  try{
+    localStorage.setItem('rtn_v10', JSON.stringify(records));
+    return true;
+  }catch(e){
+    showToast('⚠️ 照片容量太大，請減少張數或重新拍照','#f7c94f','#0f1117');
+    return false;
+  }
+}
 
 function esc(v){
   return String(v==null?'':v)
