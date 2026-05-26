@@ -779,40 +779,6 @@ tbody td:first-child{
 }
 .download-photo-btn:hover{border-color:var(--accent2);}
 
-/* ── MIC BUTTON ── */
-.mic-wrap{
-  display:flex;
-  align-items:center;
-  gap:6px;
-}
-.mic-wrap input{flex:1;}
-.mic-btn{
-  flex-shrink:0;
-  width:36px;
-  height:36px;
-  border-radius:8px;
-  border:1px solid var(--border);
-  background:var(--bg);
-  color:var(--muted);
-  font-size:16px;
-  cursor:pointer;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  transition:all .15s;
-  line-height:1;
-}
-.mic-btn:hover{border-color:var(--accent);color:var(--accent);}
-.mic-btn.listening{
-  border-color:var(--red);
-  color:var(--red);
-  background:rgba(247,111,111,.1);
-  animation:micPulse 1s infinite;
-}
-@keyframes micPulse{
-  0%,100%{box-shadow:0 0 0 0 rgba(247,111,111,.4)}
-  50%{box-shadow:0 0 0 6px rgba(247,111,111,0)}
-}
 </style>
 </head>
 
@@ -857,7 +823,7 @@ tbody td:first-child{
       <select id="f_store">
         <option value="">— 選擇賣場 —</option>
         <option>蝦皮-神準-未取貨</option>
-        <option>蝦皮-退貨退款</option>
+        <option>蝦皮-神準-退貨退款</option>
         <option>蝦皮-ONEFU-未取貨</option>
         <option>蝦皮-ONEFU-退貨退款</option>
         <option>酷澎-神準-未取貨</option>
@@ -871,10 +837,7 @@ tbody td:first-child{
 
     <div class="fg full">
       <label>商品名稱</label>
-      <div class="mic-wrap">
-        <input type="text" id="f_product" placeholder="商品名稱" autocomplete="off"/>
-        <button type="button" class="mic-btn" id="micBtn" title="語音輸入" onclick="toggleMic()">🎤</button>
-      </div>
+      <input type="text" id="f_product" placeholder="商品名稱" autocomplete="off"/>
     </div>
 
     <div class="fg">
@@ -943,6 +906,7 @@ tbody td:first-child{
   <div class="batch-bar" id="batchBar">
     <div class="batch-bar-label" id="batchBarLabel">已選 0 筆</div>
     <button class="batch-cancel-btn" onclick="clearSelection()">取消</button>
+    <button class="export-btn" style="background:var(--surface2);color:var(--accent2);border:1px solid var(--border);padding:6px 12px;font-size:11px;" onclick="exportExcel()">⬇ 匯出所選</button>
     <button class="batch-del-btn" onclick="deleteSelected()">刪除所選</button>
   </div>
 
@@ -1314,7 +1278,7 @@ function esc(v){
 }
 
 // ── INLINE EDIT helpers ──
-const STORE_OPTIONS = ['蝦皮-神準-未取貨','蝦皮-退貨退款','蝦皮-ONEFU-未取貨','蝦皮-ONEFU-退貨退款',
+const STORE_OPTIONS = ['蝦皮-神準-未取貨','蝦皮-神準-退貨退款','蝦皮-ONEFU-未取貨','蝦皮-ONEFU-退貨退款',
   '酷澎-神準-未取貨','酷澎-神準-退貨退款','酷澎-ONEFU-未取貨','酷澎-ONEFU-退貨退款','酷澎-買斷退回','大榮派車退回'];
 const UNIT_OPTIONS = ['個','包','盒','條','束','支','雙','箱','捲','組'];
 
@@ -1517,11 +1481,19 @@ function bindEditEvents(){
 // ── EXPORT EXCEL ──
 function exportExcel(){
   if(!records.length){ showToast('⚠️ 沒有資料','#f7c94f','#0f1117'); return; }
-  showToast('⏳ 產生 Excel 中...');
+
+  // 取得勾選的 id；若沒有勾選則匯出全部
+  const checkedIds = getCheckedIds();
+  const exportRecords = checkedIds.length > 0
+    ? records.filter(function(r){ return checkedIds.indexOf(r.id) >= 0; })
+    : records;
+
+  if(!exportRecords.length){ showToast('⚠️ 沒有資料','#f7c94f','#0f1117'); return; }
+  showToast('⏳ 產生 Excel 中（' + exportRecords.length + ' 筆）...');
 
   const groupMap = {};
   const groups = [];
-  records.slice().reverse().forEach(function(r){
+  exportRecords.slice().reverse().forEach(function(r){
     const key = r.order || '未填訂單';
     if(!groupMap[key]){
       groupMap[key] = { order:key, date:r.date||'', store:r.store||'', pic:r.pic||'', remark:r.remark||'', items:[] };
@@ -1544,13 +1516,26 @@ function exportExcel(){
 
     const wb = new ExcelJS.Workbook();
     const ws = wb.addWorksheet('退貨紀錄');
-    ws.columns = [
+    // 計算最多幾張照片，動態加欄
+    let maxPhotos = 0;
+    groups.forEach(function(g){
+      g.items.forEach(function(r){
+        maxPhotos = Math.max(maxPhotos, (r.photoKeys||[]).length);
+      });
+    });
+    maxPhotos = Math.max(maxPhotos, 1);
+
+    const baseCols = [
       {header:'#',key:'num',width:5},{header:'日期',key:'date',width:13},
       {header:'訂單編號',key:'order',width:24},{header:'賣場',key:'store',width:22},
       {header:'商品名稱',key:'product',width:22},{header:'數量',key:'qty',width:8},
       {header:'單位',key:'unit',width:8},{header:'負責人',key:'pic',width:12},
-      {header:'備註',key:'remark',width:20},{header:'照片1',key:'p1',width:16}
+      {header:'備註',key:'remark',width:20}
     ];
+    for(let pi=1; pi<=maxPhotos; pi++){
+      baseCols.push({header:'照片'+pi, key:'p'+pi, width:16});
+    }
+    ws.columns = baseCols;
     ws.getRow(1).height = 24;
     ws.getRow(1).eachCell(function(cell){
       cell.font={bold:true,color:{argb:'FFFFFFFF'}};
@@ -1564,21 +1549,29 @@ function exportExcel(){
       const startRow = rowIdx;
       g.items.forEach(function(r, itemIdx){
         ws.addRow({num:gi+1,date:g.date,order:g.order,store:g.store,product:r.product||'',
-          qty:r.qty||'',unit:r.unit||'',pic:g.pic,remark:itemIdx===0?g.remark:''});
+          qty:r.qty||'',unit:r.unit||'',pic:g.pic,remark:r.remark||''});
         const row = ws.getRow(rowIdx);
         row.height = 80;
         row.alignment = {vertical:'middle',horizontal:'center',wrapText:true};
         row.eachCell(function(cell){
           cell.border={top:{style:'thin'},left:{style:'thin'},bottom:{style:'thin'},right:{style:'thin'}};
         });
-        (r.photoKeys||[]).slice(0,1).forEach(function(k){
+        const photoKeysForRow = (r.photoKeys||[]);
+        let colOffset = 0;
+        photoKeysForRow.forEach(function(k){
           const src = photoMap[k]; if(!src) return;
           try{
             const base64 = src.split(',')[1];
             const ext = src.includes('image/png')?'png':'jpg';
-            const imgId = wb.addImage({base64:base64,extension:ext});
-            ws.addImage(imgId,{tl:{col:9,row:rowIdx-1},br:{col:10,row:rowIdx},editAs:'oneCell'});
-          }catch(e){}
+            const imgId = wb.addImage({base64:base64, extension:ext});
+            const colNum = 9 + colOffset; // 0-based col index
+            ws.addImage(imgId,{
+              tl:{ nativeCol: colNum,     nativeColOff: 50000,  nativeRow: rowIdx-1, nativeRowOff: 50000 },
+              br:{ nativeCol: colNum + 1, nativeColOff: -50000, nativeRow: rowIdx,   nativeRowOff: -50000 },
+              editAs:'oneCell'
+            });
+            colOffset++;
+          }catch(e){ console.warn('圖片嵌入失敗', e); }
         });
         rowIdx++;
       });
@@ -1657,65 +1650,6 @@ function showToast(msg,bg,color){
   clearTimeout(t._timer);
   t._timer = setTimeout(function(){ t.classList.remove('show'); }, 2500);
 }
-
-// ── SPEECH RECOGNITION ──
-(function(){
-  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if(!SpeechRecognition){
-    document.getElementById('micBtn').style.display = 'none';
-    return;
-  }
-
-  const recog = new SpeechRecognition();
-  recog.lang = 'zh-TW';
-  recog.continuous = false;
-  recog.interimResults = true;
-
-  let listening = false;
-  const btn = document.getElementById('micBtn');
-  const input = document.getElementById('f_product');
-
-  recog.onstart = function(){
-    listening = true;
-    btn.classList.add('listening');
-    btn.title = '收音中，點擊停止';
-    input.placeholder = '🎤 收音中...';
-  };
-
-  recog.onresult = function(e){
-    let interim = '';
-    let final = '';
-    for(let i = e.resultIndex; i < e.results.length; i++){
-      const t = e.results[i][0].transcript;
-      if(e.results[i].isFinal) final += t;
-      else interim += t;
-    }
-    input.value = final || interim;
-  };
-
-  recog.onend = function(){
-    listening = false;
-    btn.classList.remove('listening');
-    btn.title = '語音輸入';
-    input.placeholder = '商品名稱';
-  };
-
-  recog.onerror = function(e){
-    listening = false;
-    btn.classList.remove('listening');
-    input.placeholder = '商品名稱';
-    if(e.error === 'not-allowed'){
-      showToast('⚠️ 請允許麥克風權限','#f7c94f','#0f1117');
-    } else {
-      showToast('⚠️ 語音辨識失敗：' + e.error,'#f7c94f','#0f1117');
-    }
-  };
-
-  window.toggleMic = function(){
-    if(listening){ recog.stop(); }
-    else { recog.start(); }
-  };
-})();
 
 document.querySelectorAll('input[type="text"],input[type="number"]').forEach(function(el){
   el.addEventListener('keydown', function(e){
