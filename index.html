@@ -1494,9 +1494,9 @@ function exportExcel(){
   const groupMap = {};
   const groups = [];
   exportRecords.slice().reverse().forEach(function(r){
-    const key = r.order || '未填訂單';
+    const key = (r.order || '未填訂單').toUpperCase();
     if(!groupMap[key]){
-      groupMap[key] = { order:key, date:r.date||'', store:r.store||'', pic:r.pic||'', remark:r.remark||'', items:[] };
+      groupMap[key] = { order:key, date:r.date||'', store:r.store||'', pic:r.pic||'', items:[] };
       groups.push(groupMap[key]);
     }
     groupMap[key].items.push(r);
@@ -1548,8 +1548,8 @@ function exportExcel(){
     groups.forEach(function(g, gi){
       const startRow = rowIdx;
       g.items.forEach(function(r, itemIdx){
-        ws.addRow({num:gi+1,date:g.date,order:g.order,store:g.store,product:r.product||'',
-          qty:r.qty||'',unit:r.unit||'',pic:g.pic,remark:r.remark||''});
+        ws.addRow({num:gi+1, date:r.date||'', order:r.order||'', store:r.store||'', product:r.product||'',
+          qty:r.qty||'', unit:r.unit||'', pic:r.pic||'', remark:r.remark||''});
         const row = ws.getRow(rowIdx);
         row.height = 80;
         row.alignment = {vertical:'middle',horizontal:'center',wrapText:true};
@@ -1565,6 +1565,8 @@ function exportExcel(){
             const ext = src.includes('image/png')?'png':'jpg';
             const imgId = wb.addImage({base64:base64, extension:ext});
             const colNum = 9 + colOffset; // 0-based col index
+            const EMU_COL = 1200000;
+            const EMU_ROW = 1000000;
             ws.addImage(imgId,{
               tl:{ nativeCol: colNum,     nativeColOff: 50000,  nativeRow: rowIdx-1, nativeRowOff: 50000 },
               br:{ nativeCol: colNum + 1, nativeColOff: -50000, nativeRow: rowIdx,   nativeRowOff: -50000 },
@@ -1577,11 +1579,11 @@ function exportExcel(){
       });
       const endRow = rowIdx-1;
       if(endRow > startRow){
-        ['A','B','C','D','H'].forEach(function(col){
+        ['A','B','C','D','G'].forEach(function(col){
           ws.mergeCells(col+startRow+':'+col+endRow);
         });
       }
-      ['A','B','C','D','H'].forEach(function(col){
+      ['A','B','C','D','G'].forEach(function(col){
         ws.getCell(col+startRow).alignment={vertical:'middle',horizontal:'center',wrapText:true};
       });
     });
