@@ -1346,11 +1346,31 @@ function startEdit(td, record, field, type, opts){
   function onSave(newVal){
     newVal = newVal.trim();
     if(type === 'number') newVal = Math.max(1, Number(newVal));
+
+    if(field === 'order' && newVal !== origVal){
+      // 找出所有相同舊訂單編號的筆
+      const sameOrder = records.filter(function(r){
+        return r.id !== record.id && r.order === origVal;
+      });
+      if(sameOrder.length > 0){
+        const ok = confirm('同訂單編號共 ' + (sameOrder.length + 1) + ' 筆，是否全部改為「' + newVal + '」？\n\n確定 → 全部更新\n取消 → 只改這一筆');
+        if(ok){
+          sameOrder.forEach(function(r){ r.order = newVal; });
+          showToast('✅ 已更新 ' + (sameOrder.length + 1) + ' 筆訂單編號');
+        } else {
+          showToast('✅ 已儲存（僅此筆）');
+        }
+      } else {
+        showToast('✅ 已儲存');
+      }
+    } else {
+      showToast('✅ 已儲存');
+    }
+
     record[field] = newVal;
     saveRecords();
     delete td.dataset.editing;
     renderTable();
-    showToast('✅ 已儲存');
   }
   function onCancel(){
     td.innerHTML = origContent;
