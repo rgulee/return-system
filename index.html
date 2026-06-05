@@ -1522,6 +1522,13 @@ function exportExcel(){
     groupMap[key].items.push(r);
   });
 
+  // 依賣場名稱排序，相同賣場放在一起
+  groups.sort(function(a,b){
+    const sa = (a.store||'').toString();
+    const sb = (b.store||'').toString();
+    return sa.localeCompare(sb, 'zh-TW');
+  });
+
   const allKeys = [];
   groups.forEach(function(g){
     g.items.forEach(function(r){
@@ -1607,6 +1614,74 @@ function exportExcel(){
         ws.getCell(col+startRow).alignment={vertical:'middle',horizontal:'center',wrapText:true};
       });
     });
+
+    // ── 統計區塊（同工作表，退貨紀錄下方空一列）──
+    const statsStartRow = rowIdx + 2;
+
+    // 計算各賣場訂單數（去重）
+    const storeStats = {};
+    exportRecords.forEach(function(r){
+      const s = r.store || '未填賣場';
+      if(!storeStats[s]) storeStats[s] = new Set();
+      storeStats[s].add(r.order || '未填訂單');
+    });
+
+    // 依賣場名稱排序
+    const sortedStores = Object.keys(storeStats).sort(function(a,b){
+      return a.localeCompare(b,'zh-TW');
+    });
+
+    // 統計標題列
+    let sRow = statsStartRow;
+    ws.mergeCells('A'+sRow+':B'+sRow);
+    const titleCell = ws.getCell('A'+sRow);
+    titleCell.value = '各賣場訂單統計';
+    titleCell.font = {bold:true, size:13, color:{argb:'FFFFFFFF'}};
+    titleCell.fill = {type:'pattern', pattern:'solid', fgColor:{argb:'FF2E3350'}};
+    titleCell.alignment = {vertical:'middle', horizontal:'center'};
+    titleCell.border = {top:{style:'medium'},left:{style:'medium'},bottom:{style:'medium'},right:{style:'medium'}};
+    ws.getRow(sRow).height = 26;
+    sRow++;
+
+    // 欄位表頭
+    ['賣場','訂單數'].forEach(function(h, ci){
+      const cell = ws.getCell(sRow, ci+1);
+      cell.value = h;
+      cell.font = {bold:true, color:{argb:'FFFFFFFF'}};
+      cell.fill = {type:'pattern', pattern:'solid', fgColor:{argb:'FF4F8EF7'}};
+      cell.alignment = {vertical:'middle', horizontal:'center'};
+      cell.border = {top:{style:'thin'},left:{style:'thin'},bottom:{style:'thin'},right:{style:'thin'}};
+    });
+    ws.getRow(sRow).height = 22;
+    sRow++;
+
+    // 各賣場資料列
+    sortedStores.forEach(function(s, i){
+      const orderCount = storeStats[s].size;
+      [s, orderCount].forEach(function(v, ci){
+        const cell = ws.getCell(sRow, ci+1);
+        cell.value = v;
+        cell.alignment = {vertical:'middle', horizontal: ci===0 ? 'left' : 'center'};
+        cell.border = {top:{style:'thin'},left:{style:'thin'},bottom:{style:'thin'},right:{style:'thin'}};
+        if(i % 2 === 1){
+          cell.fill = {type:'pattern', pattern:'solid', fgColor:{argb:'FFF0F4FF'}};
+        }
+      });
+      ws.getRow(sRow).height = 20;
+      sRow++;
+    });
+
+    // 合計列
+    const totalOrders = new Set(exportRecords.map(function(r){ return r.order||'未填'; })).size;
+    ['合　計', totalOrders].forEach(function(v, ci){
+      const cell = ws.getCell(sRow, ci+1);
+      cell.value = v;
+      cell.font = {bold:true};
+      cell.fill = {type:'pattern', pattern:'solid', fgColor:{argb:'FFFFD700'}};
+      cell.alignment = {vertical:'middle', horizontal:'center'};
+      cell.border = {top:{style:'medium'},left:{style:'thin'},bottom:{style:'medium'},right:{style:'thin'}};
+    });
+    ws.getRow(sRow).height = 22;
 
     wb.xlsx.writeBuffer({useStyles:true,useSharedStrings:true}).then(function(buffer){
       const blob = new Blob([buffer],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
