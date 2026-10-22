@@ -5,34 +5,46 @@ $('drop').onclick=()=>$('files').click();$('drop').onkeydown=e=>{if(e.key==='Ent
 function normalize(s){return s.replace(/\s+/g,'').replace(/[，,]/g,'').replace(/[＊]/g,'*').trim()}
 function shipping(s){return /運費|配送費|貨運費|物流費|寄送費|宅配費|運送費|以下空白|合計|小計|總計|稅額|折扣/.test(s)}
 function parseOCR(text,source){
- const out=[];const lines=text.split(/\r?\n/).map(x=>x.replace(/[|｜]/g,' ').trim()).filter(Boolean);
- const noise=/運費|配送費|貨運費|物流費|寄送費|宅配費|運送費|以下空白|合計|小計|總計|稅額|折扣|客戶|電話|地址|單據|送貨|統一編號|頁次|已匯款/;
+ const out=[];
+ const lines=text.split(/\r?\n/).map(x=>x.replace(/[|｜]/g,' ').trim()).filter(Boolean);
+ const skip=/運費|配送費|貨運費|物流費|寄送費|宅配費|運送費|以下空白|合計|小計|總計|稅額|折扣|客戶|電話|地址|單據|送貨|統一編號|頁次|已匯款/;
+ const header=/品名規格|產品代號|銷售單位|數量|單價|金額|備註/;
  const units='箱|件|條|包|支|捲|卷|盒|袋|組|板|個|瓶|罐|束|打|張|片|雙|套|桶|杯|才';
- const qtyRE=new RegExp('(\\d+(?:,\\d{3})*(?:\\.\\d+)?)\\s*('+units+')','g');
- const isHeader=s=>/品名規格|產品代號|銷售單位|數量|單價|金額|備註/.test(s)&&s.length<65;
- const cleaned=s=>s.replace(/^\s*\d{1,5}\s+/,'').replace(/^\s*[A-Z]{1,5}\d{5,}\s+/i,'').replace(/\s+/g,' ').trim();
+ const token=new RegExp('(\\d+(?:,\\d{3})*(?:\\.\\d+)?)\\s*('+units+')','g');
  const number=s=>Number(s.replace(/,/g,''));
  for(let i=0;i<lines.length;i++){
-  const line=lines[i];if(noise.test(line)||isHeader(line))continue;
-  const matches=[...line.matchAll(qtyRE)];
-  if(!matches.length)continue;
-  // Prefer explicit order quantity in 件, even when a product name includes 50個*12包/箱.
-  // Order quantities usually follow the complete product specification.
-  const isPackaging=m=>/[\/*×＊xX]\s*$/.test(line.slice(Math.max(0,m.index-2),m.index))||/\s*[/*×＊xX]/.test(line.slice(m.index+m[0].length,m.index+m[0].length+3));
-  const plausible=matches.filter(m=>!isPackaging(m));
-  const orderPiece=plausible.find(m=>m[2]==='件' && m.index>=Math.max(8,line.indexOf(')')+1));
-  // If there is no 件, prefer the quantity from the numeric columns at the end of the row.
-  const nonPiece=plausible.filter(m=>m[2]!=='件' && m.index>=8);
-  const m=orderPiece||nonPiece[nonPiece.length-1];
+  let line=lines[i];
+  if(skip.test(line)||header.test(line)&&line.length<75||/^={3,}/.test(line))continue;
+  // OCR may mistake 件 for 什, or omit spaces around columns.
+  line=line.replace(/(\d)\s*[什仵]\s*(?=\d{1,6}(?:\.\d+)?\s*(?:包|個|條|盒|支|捲|卷|袋|組|板|箱)\b|\d{1,6}(?:\.\d+)?\s*(?:包|個|條|盒|支|捲|卷|袋|組|板|箱))/g,'$1件');
+  const ms=[...line.matchAll(token)];if(!ms.length)continue;
+  const packageToken=m=>{
+   const before=line.slice(Math.max(0,m.index-2),m.index);
+   const after=line.slice(m.index+m[0].length,m.index+m[0].length+4);
+   return /[/*×＊xX]\s*$/.test(before)||/^\s*[/*×＊xX]/.test(after);
+  };
+  // Look for the first 件/箱 AFTER the product specification. Quantity-column values are not product-packaging values.
+  const pieces=ms.filter(m=>/^(件|箱)$/.test(m[2])&&!packageToken(m)&&m.index>=7);
+  // A 件 immediately before the numeric quantity column is strongest evidence.
+  const explicit=pieces.find(m=>/^\s*\d+(?:[.,]\d+)?\s*(?:包|個|條|盒|支|捲|卷|袋|組|板|箱|杯)/.test(line.slice(m.index+m[0].length)))
+       ||pieces.find(m=>/\s/.test(line.slice(Math.max(0,m.index-1),m.index)) && m.index>10);
+  let m=explicit;
+  if(!m){
+   // Fallback: rightmost number+unit in the quantity column, not within the packaging specification.
+   const eligible=ms.filter(x=>!packageToken(x)&&x.index>=8);
+   m=eligible[eligible.length-1];
+  }
   if(!m)continue;
-  let name=cleaned(line.slice(0,m.index));
-  // For a fallback quantity, remove any preceding sales-unit text and quantity column.
-  if(!orderPiece){name=name.replace(/\s+\d+(?:\.\d+)?\s*(?:件|箱)\s*$/,'').trim();}
-  if(name.length>=3 && /[\u3400-\u9fffA-Za-z]/.test(name))out.push({source,name,qty:number(m[1]),unit:m[2]});
+  let prefix=line.slice(0,m.index).trim();
+  // Remove sequence number and SKU, while keeping full product packaging description.
+  prefix=prefix.replace(/^\s*\d{1,5}\s+/,'').replace(/^\s*[A-Z]{1,5}\d{5,}\s+/i,'').trim();
+  // The OCR sometimes appends a numeric code immediately before the product name.
+  if(prefix.length<3||!/[\u3400-\u9fff]/.test(prefix))continue;
+  const qty=number(m[1]);if(!Number.isFinite(qty)||qty<=0)continue;
+  out.push({source,name:prefix,qty,unit:m[2]});
  }
  return out;
 }
-
 function reparseAll(){const text=$('ocrtext').value;rows=parseOCR(text,'OCR文字');render();$('diagnostic').textContent=`從文字解析出 ${rows.length} 筆；若為 0，請檢查下方文字是否完整。`;}
 $('reparse').onclick=reparseAll;
 
